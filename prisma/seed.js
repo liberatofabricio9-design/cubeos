@@ -14,28 +14,28 @@ async function main() {
 
   // rules
   const rules = [
-    { title: "Respeito", body: "Trate todos bem, dentro e fora do jogo.", order: 1 },
-    { title: "Sem grief", body: "Não destrua nem roube construções alheias.", order: 2 },
-    { title: "Sem hacks", body: "Mods de vantagem e macros são proibidos.", order: 3 },
-    { title: "Staff", body: "As decisões da equipe são finais.", order: 4 },
+    { title: "Regra 01", body: "Não olhe para trás quando ouvir seu nome.", order: 1 },
+    { title: "Regra 02", body: "Não responda a nada que não tenha identificação.", order: 2 },
+    { title: "Regra 03", body: "Nunca fique sozinho depois das 03:00.", order: 3 },
+    { title: "Regra 04", body: "Se a tela piscar, desligue e saia.", order: 4 },
   ];
   for (const r of rules) await prisma.rule.create({ data: r });
 
   // quiz
   await prisma.quizQuestion.create({
-    data: { question: "Qual minério é o mais raro?", options: JSON.stringify(["Carvão", "Ferro", "Diamante", "Ouro"]), answer: 2, createdBy: staff.id },
+    data: { question: "Qual sinal é o mais estável?", options: JSON.stringify(["Sinal 01", "Sinal 02", "Sinal 03", "Sinal 07"]), answer: 0, createdBy: staff.id },
   });
   await prisma.quizQuestion.create({
-    data: { question: "Em que dimensão ficam os piglins?", options: JSON.stringify(["Overworld", "Nether", "End", "Caverna"]), answer: 1, createdBy: staff.id },
+    data: { question: "O que fazer se a tela piscar?", options: JSON.stringify(["Ignorar", "Desligar e sair", "Responder", "Chamar"]), answer: 1, createdBy: staff.id },
   });
 
   // ranking
-  for (const r of [{ nick: "Alex", score: 1280, playtime: 120 }, { nick: "Bia", score: 940, playtime: 90 }, { nick: "Caio", score: 720, playtime: 60 }]) {
+  for (const r of [{ nick: "Sujeito 0001", score: 1280, playtime: 120 }, { nick: "Sujeito 0002", score: 940, playtime: 90 }, { nick: "Sujeito 0003", score: 720, playtime: 60 }]) {
     await prisma.serverRanking.create({ data: r });
   }
 
   // announcement
-  await prisma.announcement.create({ data: { title: "Sorteio Semanal", body: "Participe do sorteio de sábado!", createdBy: staff.id } });
+  await prisma.announcement.create({ data: { title: "Sinal 03", body: "Ele ainda está ouvindo. Não responda.", createdBy: staff.id } });
 
   // invite code
   await prisma.inviteCode.create({ data: { code: "CUBO-INVITE-001" } });

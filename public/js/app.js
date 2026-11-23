@@ -4,6 +4,7 @@ const $$ = (s) => Array.from(document.querySelectorAll(s));
 let staff = false;
 let user = "";
 let staffUser = "";
+const I = (p) => `<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'>${p}</svg>`;
 let z = 10, n = 0;
 let socket = null;
 let csrfToken = null;
@@ -117,8 +118,8 @@ const apps = {};
 function registerApp(k, def) { apps[k] = def; }
 
 registerApp("msg", {
-  i: "💬", t: "Mensagens",
-  h: () => `<div class="app"><div class="sb" id="msgsb"><h4>Canais</h4><div class="ch on" data-ch="geral"># geral</div><div class="ch" data-ch="construcoes"># construções</div><div class="ch" data-ch="trocas"># trocas</div><h4>Diretas</h4><div id="msgusers"></div></div><div class="main"><div class="top"><b id="mt"># geral</b><span id="monline"></span></div><div class="feed" id="ms"></div><div class="compose"><input type="text" id="mi" placeholder="Escreva uma mensagem"><button id="mb">Enviar</button></div></div></div>`,
+  i: I(`<path d='M4 5h16v11H9l-5 4z'/>`), t: "Transmissões",
+  h: () => `<div class="app"><div class="sb" id="msgsb"><h4>Sinais</h4><div class="ch on" data-ch="geral">Sinal 01</div><div class="ch" data-ch="construcoes">Sinal 02</div><div class="ch" data-ch="trocas">Sinal 03</div><h4>Diretas</h4><div id="msgusers"></div></div><div class="main"><div class="top"><b id="mt">Sinal 01</b><span id="monline"></span></div><div class="feed" id="ms"></div><div class="compose"><input type="text" id="mi" placeholder="Escreva algo..."><button id="mb">Enviar</button></div></div></div>`,
   go: async () => {
     const channels = await api("/api/messages/channels").catch(() => ({ channels: [], users: [] }));
     const usersDiv = $("#msgusers");
@@ -177,14 +178,14 @@ function avatar(nick, online = true) {
 }
 
 registerApp("games", {
-  i: "🎮", t: "Jogos",
-  h: () => `<div class="pod"><div style="height:80px"><small>2º</small><br>Bia<b>940</b></div><div style="height:110px"><small>1º 👑</small><br>Alex<b>1280</b></div><div style="height:64px"><small>3º</small><br>Caio<b>720</b></div></div><div class="grid" style="padding:14px" id="gamesgrid"></div>`,
+  i: I(`<rect x='3' y='8' width='18' height='9' rx='4'/><path d='M8 11v3M6.5 12.5h3M16 12h.01M18 13.500h.01'/>`), t: "Biblioteca",
+  h: () => `<div class="path">Biblioteca - 4 itens encontrados</div><div class="grid" style="padding:14px" id="gamesgrid"></div>`,
   go: async () => {
     const grid = $("#gamesgrid");
-    grid.innerHTML = `<div class="gc"><div class="ban">🏆</div><div class="in"><b>Ranking</b><small>Top jogadores</small><button data-g="ranking">Ver</button></div></div>
-      <div class="gc"><div class="ban">🧩</div><div class="in"><b>Quiz do SMP</b><small>Teste seus conhecimentos</small><button data-g="quiz">Jogar</button></div></div>
-      <div class="gc"><div class="ban">🎲</div><div class="in"><b>Sorteio</b><small>Prêmios semanais</small><button data-g="raffle">Ver</button></div></div>
-      <div class="gc"><div class="ban">⛏️</div><div class="in"><b>Minerador</b><small>Clique e evolua</small><button data-g="minerador">Jogar</button></div></div>`;
+    grid.innerHTML = `<div class="gc"><div class="ban">${I(`<path d='M4 4h16v16H4zM4 10h10M10 14h10M10 4v6'/>`)}</div><div class="in"><b>Registros</b><small>Top sujeitos</small><button data-g="ranking">Ver</button></div></div>
+      <div class="gc"><div class="ban">${I(`<rect x='4' y='4' width='7' height='7'/><rect x='13' y='13' width='7' height='7'/>`)}</div><div class="in"><b>Teste de Sincronização</b><small>Responda e avance</small><button data-g="quiz">Jogar</button></div></div>
+      <div class="gc"><div class="ban">${I(`<circle cx='12' cy='12' r='3'/><path d='M2 12c4-6 16-6 20 0-4 6-16 6-20 0z'/>`)}</div><div class="in"><b>Sorteio</b><small>Prêmios semanais</small><button data-g="raffle">Ver</button></div></div>
+      <div class="gc"><div class="ban">${I(`<circle cx='12' cy='13' r='8'/><path d='M12 9v4l3 2M9 2h6'/>`)}</div><div class="in"><b>Coleta</b><small>Clique e evolua</small><button data-g="minerador">Jogar</button></div></div>`;
     grid.querySelectorAll("button").forEach(b => b.onclick = () => openSubGame(b.dataset.g));
   },
 });
@@ -237,8 +238,8 @@ async function loadSubGame(g) {
 }
 
 registerApp("map", {
-  i: "🗺️", t: "Mapa",
-  h: () => `<div style="height:100%"><iframe id="mapframe" style="width:100%;height:350px;border:0" src=""></iframe><div class="path" id="mappath">Mapa ao vivo</div></div>`,
+  i: I(`<circle cx='12' cy='12' r='9'/><circle cx='12' cy='12' r='4'/><path d='M12 12l6-6'/>`), t: "Radar",
+  h: () => `<div style="height:100%"><iframe id="mapframe" style="width:100%;height:350px;border:0" src=""></iframe><div class="path" id="mappath">Origem: desconhecida - Distância: indefinida</div></div>`,
   go: async () => {
     try {
       const c = await api("/api/map/config");
@@ -249,7 +250,7 @@ registerApp("map", {
 });
 
 registerApp("rules", {
-  i: "📜", t: "Regras",
+  i: I(`<path d='M7 3h8l4 4v14H7z'/><path d='M15 3v4h4M10 12h6M10 16h6'/>`), t: "Protocolo",
   h: () => `<div style="padding:14px" id="ruleslist">Carregando...</div>`,
   go: async () => {
     try {
@@ -262,8 +263,8 @@ registerApp("rules", {
 });
 
 registerApp("user", {
-  i: "👤", t: "Usuário",
-  h: () => `<div class="ban2"></div><div class="prof"><div class="av">⛏️</div><h3 style="margin:8px 0 0" id="uname"></h3><small style="color:var(--mut)" id="usince"></small><div style="margin-top:12px" id="uxp"></div><div class="stats" style="margin-top:12px" id="ustats"></div><div id="utags"></div><div style="margin-top:12px"><button class="go" id="editbio">Editar bio</button></div></div>`,
+  i: I(`<circle cx='12' cy='8' r='4'/><path d='M4 21c1-5 15-5 16 0'/>`), t: "Sujeito",
+  h: () => `<div class="ban2"></div><div class="prof"><div class="av">${I(`<circle cx='12' cy='8' r='4'/><path d='M4 21c1-5 15-5 16 0'/>`)}</div><h3 style="margin:8px 0 0" id="uname"></h3><small style="color:var(--mut)" id="usince"></small><div style="margin-top:12px" id="uxp"></div><div class="stats" style="margin-top:12px" id="ustats"></div><div id="utags"></div><div style="margin-top:12px"><button class="go" id="editbio">Editar registro</button></div></div>`,
   go: async () => {
     if (staff) {
       $("#uname").textContent = staffUser + " (Staff)";
@@ -272,7 +273,7 @@ registerApp("user", {
     try {
       const me = await api("/api/users/me");
       $("#uname").textContent = me.nick;
-      $("#usince").textContent = "Membro desde " + new Date(me.createdAt).toLocaleDateString("pt-BR");
+      $("#usince").textContent = "Sob observação desde " + new Date(me.createdAt).toLocaleDateString("pt-BR");
       $("#ustats").innerHTML = `<div><b>${me.bio ? "✓" : "—"}</b>Bio</div><div><b>${me.status}</b>Status</div><div><b>${me.windowLayout ? Object.keys(me.windowLayout).length : 0}</b>Janelas</div>`;
       const av = document.querySelector(".prof .av");
       av.innerHTML = `<img src="/api/users/skin/${encodeURIComponent(me.nick)}" alt="skin" style="width:64px;height:64px;border-radius:10px">`;
@@ -300,8 +301,8 @@ registerApp("user", {
 });
 
 registerApp("set", {
-  i: "⚙️", t: "Configurações",
-  h: () => `<div class="app"><div class="sb"><div class="ch on">🎨 Aparência</div><div class="ch">🔔 Notificações</div><div class="ch">🔒 Privacidade</div><div class="ch">👤 Conta</div></div><div class="main" style="padding:16px" id="setmain"></div></div>`,
+  i: I(`<circle cx='12' cy='12' r='3'/><path d='M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2'/>`), t: "Ajustes",
+  h: () => `<div class="app"><div class="sb"><div class="ch on">Aparência</div><div class="ch">Sinal</div><div class="ch">Privacidade</div><div class="ch">Conta</div></div><div class="main" style="padding:16px" id="setmain"></div></div>`,
   go: async () => {
     const main = $("#setmain");
     let settings = {};
@@ -337,8 +338,8 @@ registerApp("set", {
 });
 
 registerApp("files", {
-  i: "📁", t: "Arquivos",
-  h: () => `<div class="path">📁 CubeOS / Meus arquivos</div><div style="padding:10px"><input type="file" id="fileinput"><button class="pill" id="uploadbtn">Upload</button></div><div id="filelist"></div>`,
+  i: I(`<path d='M3 6h7l2 2h9v11H3z'/>`), t: "Arquivos",
+  h: () => `<div class="path">CubeOS / Arquivos</div><div style="padding:10px"><input type="file" id="fileinput"><button class="pill" id="uploadbtn">Upload</button></div><div id="filelist"></div>`,
   go: async () => {
     async function refresh() {
       const files = await api("/api/files").catch(() => []);
@@ -363,7 +364,7 @@ registerApp("files", {
 
 // staff panel
 registerApp("staff", { s: 1,
-  i: "🛡️", t: "Painel Staff",
+  i: I(`<path d='M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z'/>`), t: "Painel",
   h: () => `<div style="padding:14px" id="staffpanel">Carregando...</div>`,
   go: async () => {
     if (!staff) { $("#staffpanel").textContent = "Apenas staff."; return; }
