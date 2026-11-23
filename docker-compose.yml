@@ -1,0 +1,32 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: cubeos
+      POSTGRES_PASSWORD: cubeos
+      POSTGRES_DB: cubeos
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+  app:
+    build: .
+    restart: always
+    depends_on:
+      - db
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://cubeos:cubeos@db:5432/cubeos
+      JWT_SECRET: troque-por-um-segredo-longo
+      STAFF_TEAM_CODE: CUBO-STAFF-2026
+      UPLOAD_DIR: /app/public/uploads
+      MAX_UPLOAD_MB: 5
+      MAP_URL: ""
+    ports:
+      - "3000:3000"
+    volumes:
+      - uploads:/app/public/uploads
+volumes:
+  pgdata:
+  uploads:

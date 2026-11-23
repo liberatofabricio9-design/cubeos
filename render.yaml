@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: cubeos
+    env: docker
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: STAFF_TEAM_CODE
+        value: CUBO-STAFF-2026
+      - key: MAX_UPLOAD_MB
+        value: 5
+databases:
+  - name: cubeos-db
+    databaseName: cubeos
+    user: cubeos

@@ -1,0 +1,167 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  minecraftNick String   @unique
+  passwordHash  String
+  bio           String   @default("")
+  avatar        String   @default("")
+  status        String   @default("offline")
+  settings      String   @default("{}")
+  windowLayout  String   @default("{}")
+  banned        Boolean  @default(false)
+  banReason     String   @default("")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  messages      Message[]
+  files         File[]
+  gameProgress  GameProgress[]
+  reportsMade   Report[] @relation("Reporter")
+  reportsAgainst Report[] @relation("Reported")
+  warnings      Warning[]
+  accessRequest AccessRequest?
+}
+
+model Staff {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  role         String
+  teamCode     String
+  createdAt    DateTime @default(now())
+
+  auditLogs    AuditLog[]
+}
+
+model AccessRequest {
+  id            String   @id @default(cuid())
+  userId        String?  @unique
+  user          User?    @relation(fields: [userId], references: [id])
+  nick          String
+  passwordHash  String   @default("")
+  reason        String   @default("")
+  status        String   @default("pending")
+  reviewedBy    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  channel   String   @default("geral")
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content   String
+  deleted   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Warning {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  byStaffId String
+  reason    String
+  createdAt DateTime @default(now())
+}
+
+model Ban {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  reason    String
+  byStaffId String
+  createdAt DateTime @default(now())
+}
+
+model Rule {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  order     Int      @default(0)
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+}
+
+model QuizQuestion {
+  id        String   @id @default(cuid())
+  question  String
+  options   String
+  answer    Int
+  createdBy String?
+  createdAt DateTime @default(now())
+}
+
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  createdAt DateTime @default(now())
+  createdBy String?
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  reporterId  String
+  reporter    User     @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedId  String
+  reported    User     @relation("Reported", fields: [reportedId], references: [id], onDelete: Cascade)
+  reason      String
+  status      String   @default("open")
+  resolvedBy  String?
+  createdAt   DateTime @default(now())
+}
+
+model GameProgress {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game      String
+  data      String   @default("{}")
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, game])
+}
+
+model File {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  filename  String
+  mimeType  String
+  size      Int
+  path      String
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  staffId   String?
+  staff     Staff?   @relation(fields: [staffId], references: [id])
+  action    String
+  target    String   @default("")
+  details   String   @default("")
+  createdAt DateTime @default(now())
+}
+
+model ServerRanking {
+  id       String @id @default(cuid())
+  nick     String
+  score    Int    @default(0)
+  playtime Int    @default(0)
+}
+
+model InviteCode {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  usedBy    String?
+  createdAt DateTime @default(now())
+  expiresAt DateTime?
+}
