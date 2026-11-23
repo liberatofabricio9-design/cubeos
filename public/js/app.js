@@ -109,7 +109,7 @@ async function bootDesktop() {
     if (!staff) {
       const me = await api("/api/users/me");
       const s = me.settings || {};
-      if (s.wallpaper) { const area = $("#area"); area.style.backgroundImage = `url(${s.wallpaper})`; area.style.backgroundSize = "cover"; area.style.backgroundPosition = "center"; }
+      if (s.wallpaper) { const area = document.querySelector("#area"); area.style.backgroundImage = `url(${s.wallpaper})`; area.style.backgroundSize = "cover"; area.style.backgroundPosition = "center"; }
     }
   } catch {}
 }
@@ -121,7 +121,7 @@ function registerApp(k, def) { apps[k] = def; }
 registerApp("msg", {
   i: I(`<path d='M4 5h16v11H9l-5 4z'/>`), t: "Transmissões",
   h: () => `<div class="app"><div class="sb" id="msgsb"><h4>Sinais</h4><div class="ch on" data-ch="geral">Sinal 01</div><div class="ch" data-ch="construcoes">Sinal 02</div><div class="ch" data-ch="trocas">Sinal 03</div><h4>Diretas</h4><div id="msgusers"></div></div><div class="main"><div class="top"><b id="mt">Sinal 01</b><span id="monline"></span></div><div class="feed" id="ms"></div><div class="compose"><input type="text" id="mi" placeholder="Escreva algo..."><button id="mb">Enviar</button></div></div></div>`,
-  go: async () => {
+  go: async (w) => { const $ = (s) => w.querySelector(s); const $$ = (s) => Array.from(w.querySelectorAll(s));
     const channels = await api("/api/messages/channels").catch(() => ({ channels: [], users: [] }));
     const usersDiv = $("#msgusers");
     if (usersDiv) usersDiv.innerHTML = (channels.users || []).filter(u => u.minecraftNick !== user).map(u => `<div class="ch" data-dm="${esc(u.minecraftNick)}">${avatar(u.minecraftNick, u.status === "online")} ${esc(u.minecraftNick)}</div>`).join("");
@@ -181,7 +181,7 @@ function avatar(nick, online = true) {
 registerApp("games", {
   i: I(`<rect x='3' y='8' width='18' height='9' rx='4'/><path d='M8 11v3M6.5 12.5h3M16 12h.01M18 13.500h.01'/>`), t: "Biblioteca",
   h: () => `<div class="path">Biblioteca - 4 itens encontrados</div><div class="grid" style="padding:14px" id="gamesgrid"></div>`,
-  go: async () => {
+  go: async (w) => { const $ = (s) => w.querySelector(s); const $$ = (s) => Array.from(w.querySelectorAll(s));
     const grid = $("#gamesgrid");
     grid.innerHTML = `<div class="gc"><div class="ban">${I(`<path d='M4 4h16v16H4zM4 10h10M10 14h10M10 4v6'/>`)}</div><div class="in"><b>Registros</b><small>Top sujeitos</small><button data-g="ranking">Ver</button></div></div>
       <div class="gc"><div class="ban">${I(`<rect x='4' y='4' width='7' height='7'/><rect x='13' y='13' width='7' height='7'/>`)}</div><div class="in"><b>Teste de Sincronização</b><small>Responda e avance</small><button data-g="quiz">Jogar</button></div></div>
@@ -241,7 +241,7 @@ async function loadSubGame(g) {
 registerApp("map", {
   i: I(`<circle cx='12' cy='12' r='9'/><circle cx='12' cy='12' r='4'/><path d='M12 12l6-6'/>`), t: "Radar",
   h: () => `<div style="height:100%"><iframe id="mapframe" style="width:100%;height:350px;border:0" src=""></iframe><div class="path" id="mappath">Origem: desconhecida - Distância: indefinida</div></div>`,
-  go: async () => {
+  go: async (w) => { const $ = (s) => w.querySelector(s); const $$ = (s) => Array.from(w.querySelectorAll(s));
     try {
       const c = await api("/api/map/config");
       const f = $("#mapframe");
@@ -253,7 +253,7 @@ registerApp("map", {
 registerApp("rules", {
   i: I(`<path d='M7 3h8l4 4v14H7z'/><path d='M15 3v4h4M10 12h6M10 16h6'/>`), t: "Protocolo",
   h: () => `<div style="padding:14px" id="ruleslist">Carregando...</div>`,
-  go: async () => {
+  go: async (w) => { const $ = (s) => w.querySelector(s); const $$ = (s) => Array.from(w.querySelectorAll(s));
     try {
       const rules = await api("/api/rules");
       const anns = await api("/api/announcements").catch(() => []);
@@ -266,7 +266,7 @@ registerApp("rules", {
 registerApp("user", {
   i: I(`<circle cx='12' cy='8' r='4'/><path d='M4 21c1-5 15-5 16 0'/>`), t: "Sujeito",
   h: () => `<div class="ban2"></div><div class="prof"><div class="av">${I(`<circle cx='12' cy='8' r='4'/><path d='M4 21c1-5 15-5 16 0'/>`)}</div><h3 style="margin:8px 0 0" id="uname"></h3><small style="color:var(--mut)" id="usince"></small><div style="margin-top:12px" id="uxp"></div><div class="stats" style="margin-top:12px" id="ustats"></div><div id="utags"></div><div style="margin-top:12px"><button class="go" id="editbio">Editar registro</button></div></div>`,
-  go: async () => {
+  go: async (w) => { const $ = (s) => w.querySelector(s); const $$ = (s) => Array.from(w.querySelectorAll(s));
     if (staff) {
       $("#uname").textContent = staffUser + " (Staff)";
       return;
@@ -304,7 +304,7 @@ registerApp("user", {
 registerApp("set", {
   i: I(`<circle cx='12' cy='12' r='3'/><path d='M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2'/>`), t: "Ajustes",
   h: () => `<div class="app"><div class="sb"><div class="ch on">Aparência</div><div class="ch">Sinal</div><div class="ch">Privacidade</div><div class="ch">Conta</div></div><div class="main" style="padding:16px" id="setmain"></div></div>`,
-  go: async () => {
+  go: async (w) => { const $ = (s) => w.querySelector(s); const $$ = (s) => Array.from(w.querySelectorAll(s));
     const main = $("#setmain");
     let settings = {};
     try { settings = await api("/api/settings"); } catch {}
@@ -331,7 +331,7 @@ registerApp("set", {
     });
     main.querySelectorAll(".sw").forEach(b => b.onclick = () => b.classList.toggle("on"));
     const applyWp = (dataUrl) => {
-      const area = $("#area");
+      const area = document.querySelector("#area");
       if (dataUrl) { area.style.backgroundImage = `url(${dataUrl})`; area.style.backgroundSize = "cover"; area.style.backgroundPosition = "center"; }
       else { area.style.backgroundImage = ""; }
     };
@@ -363,7 +363,7 @@ registerApp("set", {
 registerApp("files", {
   i: I(`<path d='M3 6h7l2 2h9v11H3z'/>`), t: "Arquivos",
   h: () => `<div class="path">CubeOS / Arquivos</div><div style="padding:10px"><input type="file" id="fileinput"><button class="pill" id="uploadbtn">Upload</button></div><div id="filelist"></div>`,
-  go: async () => {
+  go: async (w) => { const $ = (s) => w.querySelector(s); const $$ = (s) => Array.from(w.querySelectorAll(s));
     async function refresh() {
       const files = await api("/api/files").catch(() => []);
       $("#filelist").innerHTML = files.map(f => `<div class="fr"><span>📄</span><span>${esc(f.filename)}</span><small>${(f.size / 1024).toFixed(1)} KB</small><button data-id="${f.id}">Excluir</button></div>`).join("") || "<p class=muted>Nenhum arquivo.</p>";
@@ -389,7 +389,7 @@ registerApp("files", {
 registerApp("staff", { s: 1,
   i: I(`<path d='M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z'/>`), t: "Painel",
   h: () => `<div style="padding:14px" id="staffpanel">Carregando...</div>`,
-  go: async () => {
+  go: async (w) => { const $ = (s) => w.querySelector(s); const $$ = (s) => Array.from(w.querySelectorAll(s));
     if (!staff) { $("#staffpanel").textContent = "Apenas staff."; return; }
     const panel = $("#staffpanel");
     panel.innerHTML = `
@@ -528,7 +528,7 @@ registerApp("calc", {
       ${["7","8","9","/","4","5","6","*","1","2","3","-","0",".","=","+"].map(k=>`<button class="pill" data-k="${k}" style="padding:12px;font-size:16px">${k}</button>`).join("")}
       <button class="pill" data-k="C" style="grid-column:span 4;padding:8px">Limpar</button>
     </div></div>`,
-  go: () => {
+  go: (w) => { const $ = (s) => w.querySelector(s); const $$ = (s) => Array.from(w.querySelectorAll(s));
     const disp = $("#calcdisp");
     let expr = "";
     document.querySelectorAll("#calcdisp ~ div button").forEach(b => b.onclick = () => {
@@ -549,7 +549,7 @@ registerApp("notepad", {
       <button class="pill" id="npload">Carregar</button>
     </div>
     <textarea id="np" style="flex:1;width:100%;background:#000;color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:10px;font:14px/1.5 monospace;resize:none"></textarea></div>`,
-  go: async () => {
+  go: async (w) => { const $ = (s) => w.querySelector(s); const $$ = (s) => Array.from(w.querySelectorAll(s));
     const ta = $("#np");
     $("#npsave").onclick = async () => {
       const name = $("#npname").value.trim() || "nota.txt";
@@ -579,7 +579,7 @@ registerApp("browser", {
       <button class="pill" id="brgo">Ir</button>
     </div>
     <iframe id="brframe" style="flex:1;width:100%;border:1px solid var(--line);border-radius:8px;background:#fff"></iframe></div>`,
-  go: () => {
+  go: (w) => { const $ = (s) => w.querySelector(s); const $$ = (s) => Array.from(w.querySelectorAll(s));
     $("#brgo").onclick = () => { let u = $("#brurl").value.trim(); if (!u.startsWith("http")) u = "https://" + u; $("#brframe").src = u; };
     $("#brurl").onkeydown = (e) => e.key === "Enter" && $("#brgo").click();
   },
@@ -591,7 +591,7 @@ registerApp("clock", {
     <div id="clockbig" style="font-size:48px;font-family:monospace;color:var(--or)"></div>
     <div id="clockdate" style="color:var(--mut);margin-top:8px"></div>
     <div style="margin-top:16px"><button class="pill" id="clocktimer">Iniciar cronômetro</button> <span id="timer" style="margin-left:8px;font-family:monospace">00:00</span></div></div>`,
-  go: () => {
+  go: (w) => { const $ = (s) => w.querySelector(s); const $$ = (s) => Array.from(w.querySelectorAll(s));
     const tick = () => { const d = new Date(); $("#clockbig").textContent = d.toLocaleTimeString("pt-BR"); $("#clockdate").textContent = d.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" }); };
     tick(); setInterval(tick, 1000);
     let t0 = null, iv = null;
@@ -606,7 +606,7 @@ registerApp("clock", {
 registerApp("trash", {
   i: I(`<path d='M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13'/>`), t: "Lixeira",
   h: () => `<div style="padding:14px"><p class="muted">Arquivos excluídos aparecem aqui.</p><div id="trashlist"></div><button class="pill" id="trashclear" style="margin-top:10px">Esvaziar</button></div>`,
-  go: async () => {
+  go: async (w) => { const $ = (s) => w.querySelector(s); const $$ = (s) => Array.from(w.querySelectorAll(s));
     const list = $("#trashlist");
     list.innerHTML = "<p class=muted>Função em desenvolvimento.</p>";
     $("#trashclear").onclick = () => { list.innerHTML = "<p class=muted>Lixeira vazia.</p>"; };
@@ -624,7 +624,7 @@ registerApp("paint", {
       <button class="pill" id="psave">Salvar</button>
     </div>
     <canvas id="pcanvas" width="600" height="320" style="flex:1;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:crosshair;touch-action:none"></canvas></div>`,
-  go: () => {
+  go: (w) => { const $ = (s) => w.querySelector(s); const $$ = (s) => Array.from(w.querySelectorAll(s));
     const c = $("#pcanvas"); const ctx = c.getContext("2d");
     let drawing = false;
     const color = () => $("#pcolor").value;
@@ -641,7 +641,7 @@ registerApp("paint", {
 registerApp("calendar", {
   i: I(`<rect x='3' y='5' width='18' height='16' rx='2'/><path d='M3 10h18M8 3v4M16 3v4'/>`), t: "Calendário",
   h: () => `<div style="padding:14px"><div id="calhead" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><button class="pill" id="calprev">◀</button><b id="caltitle"></b><button class="pill" id="calnext">▶</button></div><div id="calgrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center"></div></div>`,
-  go: () => {
+  go: (w) => { const $ = (s) => w.querySelector(s); const $$ = (s) => Array.from(w.querySelectorAll(s));
     let d = new Date();
     const render = () => {
       const y = d.getFullYear(), m = d.getMonth();
@@ -668,7 +668,7 @@ registerApp("contacts", {
   h: () => `<div style="padding:14px">
     <div style="display:flex;gap:6px;margin-bottom:8px"><input id="cname" placeholder="Nome" style="flex:1;padding:6px;background:#000;border:1px solid var(--line);border-radius:6px"><input id="cphone" placeholder="Telefone" style="flex:1;padding:6px;background:#000;border:1px solid var(--line);border-radius:6px"><button class="pill" id="cadd">Adicionar</button></div>
     <div id="clist"></div></div>`,
-  go: () => {
+  go: (w) => { const $ = (s) => w.querySelector(s); const $$ = (s) => Array.from(w.querySelectorAll(s));
     const key = "cubeos_contacts";
     const load = () => JSON.parse(localStorage.getItem(key) || "[]");
     const save = (d) => localStorage.setItem(key, JSON.stringify(d));
@@ -693,7 +693,7 @@ registerApp("imgview", {
     <div style="flex:1;display:grid;place-items:center;border:1px solid var(--line);border-radius:8px;overflow:auto;background:#000">
       <img id="imgpreview" style="max-width:100%;max-height:100%">
     </div></div>`,
-  go: () => {
+  go: (w) => { const $ = (s) => w.querySelector(s); const $$ = (s) => Array.from(w.querySelectorAll(s));
     $("#imgfile").onchange = (e) => {
       const f = e.target.files[0]; if (!f) return;
       const r = new FileReader(); r.onload = () => $("#imgpreview").src = r.result; r.readAsDataURL(f);
@@ -711,7 +711,7 @@ registerApp("media", {
       <button class="pill" id="mediaload">Carregar</button>
       <input type="file" id="mediafile" accept="audio/*,video/*">
     </div></div>`,
-  go: () => {
+  go: (w) => { const $ = (s) => w.querySelector(s); const $$ = (s) => Array.from(w.querySelectorAll(s));
     $("#mediaload").onclick = () => { const u = $("#mediaurl").value.trim(); $("#mediavid").src = u; $("#mediaaud").src = u; };
     $("#mediafile").onchange = (e) => { const f = e.target.files[0]; if (!f) return; const u = URL.createObjectURL(f); $("#mediavid").src = u; $("#mediaaud").src = u; };
   },
@@ -720,7 +720,7 @@ registerApp("media", {
 registerApp("taskmgr", {
   i: I(`<rect x='3' y='4' width='18' height='16' rx='2'/><path d='M3 9h18M8 4v5M16 4v5'/>`), t: "Gerenciador de Tarefas",
   h: () => `<div style="padding:14px"><table id="tasktbl"><tr><th>Processo</th><th>CPU</th><th>Memória</th><th></th></tr></table></div>`,
-  go: () => {
+  go: (w) => { const $ = (s) => w.querySelector(s); const $$ = (s) => Array.from(w.querySelectorAll(s));
     const procs = [
       { name: "CubeOS Shell", cpu: "0.1%", mem: "12 MB" },
       { name: "Transmissões", cpu: "0.3%", mem: "24 MB" },
@@ -737,7 +737,7 @@ registerApp("taskmgr", {
 registerApp("sysinfo", {
   i: I(`<rect x='4' y='4' width='16' height='16' rx='2'/><path d='M8 8h8M8 12h8M8 16h5'/>`), t: "Sistema",
   h: () => `<div style="padding:14px" id="sysinfo"></div>`,
-  go: () => {
+  go: (w) => { const $ = (s) => w.querySelector(s); const $$ = (s) => Array.from(w.querySelectorAll(s));
     const info = [
       ["Sistema", "CubeOS"],
       ["Versão", "1.0.0"],
@@ -765,7 +765,7 @@ function openApp(k) {
   w.innerHTML = `<header><span>${a.i} ${a.t}</span><button data-a="min" aria-label="Minimizar">–</button><button data-a="max" aria-label="Maximizar">□</button><button data-a="x" aria-label="Fechar">×</button></header><div class="body">${a.h()}</div><div class="resize" style="position:absolute;right:0;bottom:0;width:14px;height:14px;cursor:nwse-resize"></div>`;
   $("#area").append(w);
   front(w);
-  if (a.go) a.go();
+  if (a.go) a.go(w);
   const t = document.createElement("button");
   t.innerHTML = a.i + " " + a.t;
   t.dataset.k = k;
@@ -828,7 +828,14 @@ async function logout() {
   staff = false; user = ""; staffUser = "";
 }
 
-$("#start").onclick = () => $("#menu").classList.toggle("hide");
+$("#start").onclick = (e) => { e.stopPropagation(); $("#menu").classList.toggle("hide"); };
+document.addEventListener("click", (e) => {
+  const menu = document.querySelector("#menu");
+  const start = document.querySelector("#start");
+  if (menu && !menu.classList.contains("hide") && !menu.contains(e.target) && (!start || !start.contains(e.target))) {
+    menu.classList.add("hide");
+  }
+});
 
 function tick() {
   $("#clock").textContent = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
