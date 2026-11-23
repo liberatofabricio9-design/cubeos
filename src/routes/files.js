@@ -19,7 +19,7 @@ const upload = multer({
   storage,
   limits: { fileSize: config.maxUploadMb * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const allowed = ["image/png", "image/jpeg", "image/gif", "image/webp"];
+    const allowed = ["image/png", "image/jpeg", "image/gif", "image/webp", "text/plain", "text/markdown", "application/pdf"];
     if (allowed.includes(file.mimetype)) cb(null, true);
     else cb(new Error("tipo de arquivo não permitido"));
   },

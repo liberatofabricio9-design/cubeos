@@ -39,7 +39,8 @@ router.post("/register-request", async (req, res) => {
       });
       await prisma.inviteCode.update({ where: { id: code.id }, data: { usedBy: user.id } });
       const token = signToken({ id: user.id, type: "user" });
-      res.cookie("cubeos_user", token, { httpOnly: true, sameSite: "strict", secure: config.cookieSecure, path: "/", maxAge: 7 * 24 * 3600 * 1000 });
+      const secure = req.secure || req.get("x-forwarded-proto") === "https" || config.cookieSecure;
+      res.cookie("cubeos_user", token, { httpOnly: true, sameSite: "strict", secure, path: "/", maxAge: 7 * 24 * 3600 * 1000 });
       return res.json({ ok: true, autoApproved: true, user: { id: user.id, nick: user.minecraftNick } });
     }
 
@@ -66,7 +67,8 @@ router.post("/login", async (req, res) => {
     await prisma.user.update({ where: { id: user.id }, data: { status: "online", lastLogin: undefined } }).catch(() => {});
     await prisma.user.update({ where: { id: user.id }, data: { status: "online" } });
     const token = signToken({ id: user.id, type: "user" });
-    res.cookie("cubeos_user", token, { httpOnly: true, sameSite: "strict", secure: config.cookieSecure, path: "/", maxAge: 7 * 24 * 3600 * 1000 });
+    const secure = req.secure || req.get("x-forwarded-proto") === "https" || config.cookieSecure;
+    res.cookie("cubeos_user", token, { httpOnly: true, sameSite: "strict", secure, path: "/", maxAge: 7 * 24 * 3600 * 1000 });
     res.json({ ok: true, user: { id: user.id, nick: user.minecraftNick } });
   } catch (e) {
     console.error(e);

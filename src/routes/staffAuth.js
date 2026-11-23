@@ -17,7 +17,8 @@ router.post("/login", async (req, res) => {
     const ok = await bcrypt.compare(password, staff.passwordHash);
     if (!ok) return res.status(401).json({ error: "credenciais inválidas" });
     const token = signToken({ id: staff.id, type: "staff" });
-    res.cookie("cubeos_staff", token, { httpOnly: true, sameSite: "strict", secure: config.cookieSecure, path: "/", maxAge: 7 * 24 * 3600 * 1000 });
+    const secure = req.secure || req.get("x-forwarded-proto") === "https" || config.cookieSecure;
+    res.cookie("cubeos_staff", token, { httpOnly: true, sameSite: "strict", secure, path: "/", maxAge: 7 * 24 * 3600 * 1000 });
     res.json({ ok: true, staff: { id: staff.id, username: staff.username, role: staff.role } });
   } catch (e) {
     console.error(e);

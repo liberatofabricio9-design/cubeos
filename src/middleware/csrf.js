@@ -8,10 +8,11 @@ function csrfMiddleware(req, res, next) {
   // issue token if missing
   if (!req.cookies?.csrf_token) {
     const t = generateToken();
+    const secure = req.secure || req.get("x-forwarded-proto") === "https" || require("../config").cookieSecure;
     res.cookie("csrf_token", t, {
       httpOnly: false,
       sameSite: "strict",
-      secure: require("../config").cookieSecure,
+      secure,
       path: "/",
     });
   }

@@ -12,6 +12,7 @@ const { authLimiter, apiLimiter } = require("./middleware/rateLimit");
 const { csrfMiddleware } = require("./middleware/csrf");
 
 const app = express();
+app.set("trust proxy", 1);
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: true, credentials: true } });
 
@@ -24,7 +25,7 @@ app.use(apiLimiter);
 
 // static
 const publicDir = path.join(__dirname, "..", "public");
-app.use(express.static(publicDir));
+app.use(express.static(publicDir, { setHeaders: (res) => { res.set("Cache-Control", "no-store, no-cache, must-revalidate"); } }));
 const uploadDir = path.resolve(config.uploadDir);
 fs.mkdirSync(uploadDir, { recursive: true });
 app.use("/uploads", express.static(uploadDir));
