@@ -108,7 +108,8 @@ async function bootDesktop() {
   try {
     if (!staff) {
       const me = await api("/api/users/me");
-      if (me.windowLayout) { /* could restore; skip for now */ }
+      const s = me.settings || {};
+      if (s.wallpaper) { const area = $("#area"); area.style.backgroundImage = `url(${s.wallpaper})`; area.style.backgroundSize = "cover"; area.style.backgroundPosition = "center"; }
     }
   } catch {}
 }
@@ -311,6 +312,13 @@ registerApp("set", {
       <div class="row">Notificações<button class="sw ${settings.notifications !== false ? "on" : ""}" data-k="notifications"></button></div>
       <div class="row">Sons do sistema<button class="sw ${settings.sounds ? "on" : ""}" data-k="sounds"></button></div>
       <div class="row">Mostrar status online<button class="sw ${settings.onlineStatus !== false ? "on" : ""}" data-k="onlineStatus"></button></div>
+      <hr style="border-color:var(--line);margin:16px 0">
+      <b>Papel de parede</b>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <input type="file" id="wpfile" accept="image/*">
+        <button class="pill" id="wpapply">Aplicar</button>
+        <button class="pill" id="wpclear">Padrão</button>
+      </div>
       <div style="margin-top:12px"><button class="go" id="saveset">Salvar</button></div>
       <hr style="border-color:var(--line);margin:16px 0">
       <b>Trocar senha</b>
@@ -322,9 +330,24 @@ registerApp("set", {
       document.documentElement.style.setProperty("--or2", b.dataset.c);
     });
     main.querySelectorAll(".sw").forEach(b => b.onclick = () => b.classList.toggle("on"));
+    const applyWp = (dataUrl) => {
+      const area = $("#area");
+      if (dataUrl) { area.style.backgroundImage = `url(${dataUrl})`; area.style.backgroundSize = "cover"; area.style.backgroundPosition = "center"; }
+      else { area.style.backgroundImage = ""; }
+    };
+    if (settings.wallpaper) applyWp(settings.wallpaper);
+    $("#wpapply").onclick = () => {
+      const f = $("#wpfile").files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = () => { settings.wallpaper = r.result; applyWp(r.result); $("#wpapply").textContent = "Aplicado!"; };
+      r.readAsDataURL(f);
+    };
+    $("#wpclear").onclick = () => { settings.wallpaper = ""; applyWp(""); $("#wpclear").textContent = "Padrão"; };
     $("#saveset").onclick = async () => {
       const s = {};
       main.querySelectorAll(".sw").forEach(b => { s[b.dataset.k] = b.classList.contains("on"); });
+      if (settings.wallpaper) s.wallpaper = settings.wallpaper;
       await api("/api/settings", { method: "PUT", body: JSON.stringify(s) });
       $("#saveset").textContent = "Salvo!";
     };
@@ -587,6 +610,145 @@ registerApp("trash", {
     const list = $("#trashlist");
     list.innerHTML = "<p class=muted>Função em desenvolvimento.</p>";
     $("#trashclear").onclick = () => { list.innerHTML = "<p class=muted>Lixeira vazia.</p>"; };
+  },
+});
+
+// ---------- More PC apps ----------
+registerApp("paint", {
+  i: I(`<path d='M4 20h16M7 17l10-10 2 2-10 10H7z'/>`), t: "Paint",
+  h: () => `<div style="padding:10px;height:100%;display:flex;flex-direction:column">
+    <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center">
+      <input type="color" id="pcolor" value="#ff7a1a">
+      <input type="range" id="psize" min="1" max="20" value="4" style="accent-color:var(--or)">
+      <button class="pill" id="pclear">Limpar</button>
+      <button class="pill" id="psave">Salvar</button>
+    </div>
+    <canvas id="pcanvas" width="600" height="320" style="flex:1;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:crosshair;touch-action:none"></canvas></div>`,
+  go: () => {
+    const c = $("#pcanvas"); const ctx = c.getContext("2d");
+    let drawing = false;
+    const color = () => $("#pcolor").value;
+    const size = () => parseInt($("#psize").value,10);
+    const pos = (e) => { const r = c.getBoundingClientRect(); return { x: (e.clientX-r.left)*(c.width/r.width), y: (e.clientY-r.top)*(c.height/r.height) }; };
+    c.onpointerdown = (e) => { drawing = true; const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); };
+    c.onpointermove = (e) => { if (!drawing) return; const p = pos(e); ctx.lineTo(p.x,p.y); ctx.strokeStyle = color(); ctx.lineWidth = size(); ctx.lineCap = "round"; ctx.stroke(); };
+    c.onpointerup = () => drawing = false;
+    $("#pclear").onclick = () => ctx.clearRect(0,0,c.width,c.height);
+    $("#psave").onclick = () => { const a = document.createElement("a"); a.href = c.toDataURL(); a.download = "desenho.png"; a.click(); };
+  },
+});
+
+registerApp("calendar", {
+  i: I(`<rect x='3' y='5' width='18' height='16' rx='2'/><path d='M3 10h18M8 3v4M16 3v4'/>`), t: "Calendário",
+  h: () => `<div style="padding:14px"><div id="calhead" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><button class="pill" id="calprev">◀</button><b id="caltitle"></b><button class="pill" id="calnext">▶</button></div><div id="calgrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center"></div></div>`,
+  go: () => {
+    let d = new Date();
+    const render = () => {
+      const y = d.getFullYear(), m = d.getMonth();
+      $("#caltitle").textContent = d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+      const first = new Date(y,m,1).getDay();
+      const days = new Date(y,m+1,0).getDate();
+      const grid = $("#calgrid");
+      grid.innerHTML = ["D","S","T","Q","Q","S","S"].map(x=>`<div style="color:var(--mut);font-size:12px">${x}</div>`).join("");
+      for (let i=0;i<first;i++) grid.insertAdjacentHTML("beforeend","<div></div>");
+      const today = new Date();
+      for (let day=1;day<=days;day++) {
+        const isToday = today.getFullYear()===y && today.getMonth()===m && today.getDate()===day;
+        grid.insertAdjacentHTML("beforeend", `<div style="padding:6px;border-radius:6px;${isToday?"background:var(--or);color:#000;font-weight:700":""}">${day}</div>`);
+      }
+    };
+    render();
+    $("#calprev").onclick = () => { d.setMonth(d.getMonth()-1); render(); };
+    $("#calnext").onclick = () => { d.setMonth(d.getMonth()+1); render(); };
+  },
+});
+
+registerApp("contacts", {
+  i: I(`<path d='M4 6h16v13H4z'/><circle cx='12' cy='11' r='3'/><path d='M8 17c1-2 7-2 8 0'/>`), t: "Contatos",
+  h: () => `<div style="padding:14px">
+    <div style="display:flex;gap:6px;margin-bottom:8px"><input id="cname" placeholder="Nome" style="flex:1;padding:6px;background:#000;border:1px solid var(--line);border-radius:6px"><input id="cphone" placeholder="Telefone" style="flex:1;padding:6px;background:#000;border:1px solid var(--line);border-radius:6px"><button class="pill" id="cadd">Adicionar</button></div>
+    <div id="clist"></div></div>`,
+  go: () => {
+    const key = "cubeos_contacts";
+    const load = () => JSON.parse(localStorage.getItem(key) || "[]");
+    const save = (d) => localStorage.setItem(key, JSON.stringify(d));
+    const render = () => {
+      const d = load();
+      $("#clist").innerHTML = d.map((c,i)=>`<div class="fr"><span>👤</span><span>${esc(c.name)}</span><small>${esc(c.phone)}</small><button data-i="${i}">Excluir</button></div>`).join("") || "<p class=muted>Nenhum contato.</p>";
+      $("#clist").querySelectorAll("button").forEach(b=>b.onclick=()=>{const d=load(); d.splice(parseInt(b.dataset.i,10),1); save(d); render();});
+    };
+    $("#cadd").onclick = () => {
+      const name = $("#cname").value.trim(); const phone = $("#cphone").value.trim();
+      if (!name) return;
+      const d = load(); d.push({name,phone}); save(d); $("#cname").value=""; $("#cphone").value=""; render();
+    };
+    render();
+  },
+});
+
+registerApp("imgview", {
+  i: I(`<rect x='3' y='3' width='18' height='18' rx='2'/><circle cx='8.5' cy='8.5' r='1.5'/><path d='M21 15l-5-5L5 21'/>`), t: "Visualizador",
+  h: () => `<div style="padding:14px;height:100%;display:flex;flex-direction:column">
+    <input type="file" id="imgfile" accept="image/*" style="margin-bottom:8px">
+    <div style="flex:1;display:grid;place-items:center;border:1px solid var(--line);border-radius:8px;overflow:auto;background:#000">
+      <img id="imgpreview" style="max-width:100%;max-height:100%">
+    </div></div>`,
+  go: () => {
+    $("#imgfile").onchange = (e) => {
+      const f = e.target.files[0]; if (!f) return;
+      const r = new FileReader(); r.onload = () => $("#imgpreview").src = r.result; r.readAsDataURL(f);
+    };
+  },
+});
+
+registerApp("media", {
+  i: I(`<circle cx='12' cy='12' r='9'/><path d='M10 8l6 4-6 4z'/>`), t: "Player de Mídia",
+  h: () => `<div style="padding:14px">
+    <input id="mediaurl" placeholder="URL de áudio/vídeo" style="width:100%;padding:6px;background:#000;border:1px solid var(--line);border-radius:6px;margin-bottom:8px">
+    <video id="mediavid" controls style="width:100%;max-height:240px;border-radius:8px;background:#000"></video>
+    <audio id="mediaaud" controls style="width:100%;margin-top:8px"></audio>
+    <div style="margin-top:8px;display:flex;gap:6px">
+      <button class="pill" id="mediaload">Carregar</button>
+      <input type="file" id="mediafile" accept="audio/*,video/*">
+    </div></div>`,
+  go: () => {
+    $("#mediaload").onclick = () => { const u = $("#mediaurl").value.trim(); $("#mediavid").src = u; $("#mediaaud").src = u; };
+    $("#mediafile").onchange = (e) => { const f = e.target.files[0]; if (!f) return; const u = URL.createObjectURL(f); $("#mediavid").src = u; $("#mediaaud").src = u; };
+  },
+});
+
+registerApp("taskmgr", {
+  i: I(`<rect x='3' y='4' width='18' height='16' rx='2'/><path d='M3 9h18M8 4v5M16 4v5'/>`), t: "Gerenciador de Tarefas",
+  h: () => `<div style="padding:14px"><table id="tasktbl"><tr><th>Processo</th><th>CPU</th><th>Memória</th><th></th></tr></table></div>`,
+  go: () => {
+    const procs = [
+      { name: "CubeOS Shell", cpu: "0.1%", mem: "12 MB" },
+      { name: "Transmissões", cpu: "0.3%", mem: "24 MB" },
+      { name: "Radar", cpu: "0.2%", mem: "18 MB" },
+      { name: "Navegador", cpu: "1.2%", mem: "86 MB" },
+      { name: "Paint", cpu: "0.0%", mem: "8 MB" },
+    ];
+    const tbl = $("#tasktbl");
+    tbl.innerHTML = "<tr><th>Processo</th><th>CPU</th><th>Memória</th><th></th></tr>" + procs.map((p,i)=>`<tr><td>${esc(p.name)}</td><td>${p.cpu}</td><td>${p.mem}</td><td><button data-i="${i}">Encerrar</button></td></tr>`).join("");
+    tbl.querySelectorAll("button").forEach(b => b.onclick = () => { b.closest("tr").remove(); });
+  },
+});
+
+registerApp("sysinfo", {
+  i: I(`<rect x='4' y='4' width='16' height='16' rx='2'/><path d='M8 8h8M8 12h8M8 16h5'/>`), t: "Sistema",
+  h: () => `<div style="padding:14px" id="sysinfo"></div>`,
+  go: () => {
+    const info = [
+      ["Sistema", "CubeOS"],
+      ["Versão", "1.0.0"],
+      ["Navegador", navigator.userAgent.split(" ").slice(-1)[0]],
+      ["Plataforma", navigator.platform],
+      ["Idioma", navigator.language],
+      ["Resolução", screen.width + "x" + screen.height],
+      ["Memória (JS heap)", (performance.memory ? (performance.memory.usedJSHeapSize/1048576).toFixed(1) + " MB" : "n/d")],
+      ["Online", navigator.onLine ? "Sim" : "Não"],
+    ];
+    $("#sysinfo").innerHTML = info.map(([k,v])=>`<div class="row"><span>${esc(k)}</span><span style="color:var(--mut)">${esc(v)}</span></div>`).join("");
   },
 });
 
