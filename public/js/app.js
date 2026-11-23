@@ -496,6 +496,100 @@ registerApp("staff", { s: 1,
   },
 });
 
+// ---------- Extra PC apps ----------
+registerApp("calc", {
+  i: I(`<rect x='4' y='4' width='16' height='16' rx='2'/><path d='M8 8h.01M12 8h.01M16 8h.01M8 12h.01M12 12h.01M16 12h.01M8 16h8'/>`), t: "Calculadora",
+  h: () => `<div style="padding:14px;max-width:260px;margin:0 auto">
+    <input id="calcdisp" readonly style="width:100%;padding:10px;font-size:20px;text-align:right;background:#000;border:1px solid var(--line);border-radius:8px;margin-bottom:8px">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+      ${["7","8","9","/","4","5","6","*","1","2","3","-","0",".","=","+"].map(k=>`<button class="pill" data-k="${k}" style="padding:12px;font-size:16px">${k}</button>`).join("")}
+      <button class="pill" data-k="C" style="grid-column:span 4;padding:8px">Limpar</button>
+    </div></div>`,
+  go: () => {
+    const disp = $("#calcdisp");
+    let expr = "";
+    document.querySelectorAll("#calcdisp ~ div button").forEach(b => b.onclick = () => {
+      const k = b.dataset.k;
+      if (k === "C") { expr = ""; disp.value = ""; }
+      else if (k === "=") { try { disp.value = Function("return " + expr)(); expr = disp.value; } catch { disp.value = "Erro"; expr = ""; } }
+      else { expr += k; disp.value = expr; }
+    });
+  },
+});
+
+registerApp("notepad", {
+  i: I(`<path d='M7 3h8l4 4v14H7z'/><path d='M15 3v4h4M10 10h6M10 14h6M10 18h4'/>`), t: "Bloco de Notas",
+  h: () => `<div style="padding:10px;height:100%;display:flex;flex-direction:column">
+    <div style="display:flex;gap:6px;margin-bottom:6px">
+      <input id="npname" placeholder="nome do arquivo" style="flex:1;padding:6px;background:#000;border:1px solid var(--line);border-radius:6px">
+      <button class="pill" id="npsave">Salvar</button>
+      <button class="pill" id="npload">Carregar</button>
+    </div>
+    <textarea id="np" style="flex:1;width:100%;background:#000;color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:10px;font:14px/1.5 monospace;resize:none"></textarea></div>`,
+  go: async () => {
+    const ta = $("#np");
+    $("#npsave").onclick = async () => {
+      const name = $("#npname").value.trim() || "nota.txt";
+      const blob = new Blob([ta.value], { type: "text/plain" });
+      const fd = new FormData(); fd.append("file", blob, name);
+      const ct = getCookie("csrf_token");
+      const r = await fetch("/api/files/upload", { method: "POST", credentials: "include", headers: { "X-CSRF-Token": ct }, body: fd });
+      if (r.ok) $("#npsave").textContent = "Salvo!"; else $("#npsave").textContent = "Erro";
+    };
+    $("#npload").onclick = async () => {
+      const files = await api("/api/files").catch(()=>[]);
+      if (!files.length) { alert("Nenhum arquivo"); return; }
+      const name = prompt("Nome do arquivo para carregar:");
+      const f = files.find(x => x.filename === name);
+      if (!f) { alert("Não encontrado"); return; }
+      const r = await fetch(f.path, { credentials: "include" });
+      ta.value = await r.text();
+    };
+  },
+});
+
+registerApp("browser", {
+  i: I(`<circle cx='12' cy='12' r='9'/><path d='M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18'/>`), t: "Navegador",
+  h: () => `<div style="padding:10px;height:100%;display:flex;flex-direction:column">
+    <div style="display:flex;gap:6px;margin-bottom:6px">
+      <input id="brurl" placeholder="https://..." style="flex:1;padding:6px;background:#000;border:1px solid var(--line);border-radius:6px">
+      <button class="pill" id="brgo">Ir</button>
+    </div>
+    <iframe id="brframe" style="flex:1;width:100%;border:1px solid var(--line);border-radius:8px;background:#fff"></iframe></div>`,
+  go: () => {
+    $("#brgo").onclick = () => { let u = $("#brurl").value.trim(); if (!u.startsWith("http")) u = "https://" + u; $("#brframe").src = u; };
+    $("#brurl").onkeydown = (e) => e.key === "Enter" && $("#brgo").click();
+  },
+});
+
+registerApp("clock", {
+  i: I(`<circle cx='12' cy='12' r='9'/><path d='M12 7v5l3 2'/>`), t: "Relógio",
+  h: () => `<div style="padding:20px;text-align:center">
+    <div id="clockbig" style="font-size:48px;font-family:monospace;color:var(--or)"></div>
+    <div id="clockdate" style="color:var(--mut);margin-top:8px"></div>
+    <div style="margin-top:16px"><button class="pill" id="clocktimer">Iniciar cronômetro</button> <span id="timer" style="margin-left:8px;font-family:monospace">00:00</span></div></div>`,
+  go: () => {
+    const tick = () => { const d = new Date(); $("#clockbig").textContent = d.toLocaleTimeString("pt-BR"); $("#clockdate").textContent = d.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" }); };
+    tick(); setInterval(tick, 1000);
+    let t0 = null, iv = null;
+    $("#clocktimer").onclick = () => {
+      if (iv) { clearInterval(iv); iv = null; $("#clocktimer").textContent = "Iniciar cronômetro"; return; }
+      t0 = Date.now(); $("#clocktimer").textContent = "Parar";
+      iv = setInterval(() => { const s = Math.floor((Date.now()-t0)/1000); $("#timer").textContent = String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0"); }, 500);
+    };
+  },
+});
+
+registerApp("trash", {
+  i: I(`<path d='M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13'/>`), t: "Lixeira",
+  h: () => `<div style="padding:14px"><p class="muted">Arquivos excluídos aparecem aqui.</p><div id="trashlist"></div><button class="pill" id="trashclear" style="margin-top:10px">Esvaziar</button></div>`,
+  go: async () => {
+    const list = $("#trashlist");
+    list.innerHTML = "<p class=muted>Função em desenvolvimento.</p>";
+    $("#trashclear").onclick = () => { list.innerHTML = "<p class=muted>Lixeira vazia.</p>"; };
+  },
+});
+
 // ---------- Desktop core ----------
 function openApp(k) {
   const a = apps[k];
@@ -506,7 +600,7 @@ function openApp(k) {
   w.style.left = (60 + n * 28) % 200 + 90 + "px";
   w.style.top = (20 + n * 28) % 120 + 20 + "px";
   n++;
-  w.innerHTML = `<header><span>${a.i} ${a.t}</span><button data-a="min" aria-label="Minimizar">–</button><button data-a="x" aria-label="Fechar">×</button></header><div class="body">${a.h()}</div>`;
+  w.innerHTML = `<header><span>${a.i} ${a.t}</span><button data-a="min" aria-label="Minimizar">–</button><button data-a="max" aria-label="Maximizar">□</button><button data-a="x" aria-label="Fechar">×</button></header><div class="body">${a.h()}</div><div class="resize" style="position:absolute;right:0;bottom:0;width:14px;height:14px;cursor:nwse-resize"></div>`;
   $("#area").append(w);
   front(w);
   if (a.go) a.go();
@@ -521,7 +615,17 @@ function openApp(k) {
   };
   $("#tasks").append(t);
   w.querySelector("[data-a=min]").onclick = () => w.classList.add("hide");
+  w.querySelector("[data-a=max]").onclick = () => {
+    if (w.dataset.maxed === "1") { w.style.left = w.dataset.prevLeft; w.style.top = w.dataset.prevTop; w.style.width = w.dataset.prevWidth; w.style.height = w.dataset.prevHeight; w.dataset.maxed = "0"; }
+    else { w.dataset.prevLeft = w.style.left; w.dataset.prevTop = w.style.top; w.dataset.prevWidth = w.style.width; w.dataset.prevHeight = w.style.height; w.style.left = "0px"; w.style.top = "0px"; w.style.width = "100%"; w.style.height = "calc(100% - 40px)"; w.dataset.maxed = "1"; }
+  };
   w.querySelector("[data-a=x]").onclick = () => { w.remove(); t.remove(); };
+  // resize
+  const rz = w.querySelector(".resize");
+  let resizing = false, sx, sy, sw, sh;
+  rz.onpointerdown = (e) => { resizing = true; sx = e.clientX; sy = e.clientY; sw = w.offsetWidth; sh = w.offsetHeight; rz.setPointerCapture(e.pointerId); e.stopPropagation(); };
+  rz.onpointermove = (e) => { if (resizing) { w.style.width = Math.max(260, sw + (e.clientX - sx)) + "px"; w.style.height = Math.max(180, sh + (e.clientY - sy)) + "px"; } };
+  rz.onpointerup = () => resizing = false;
   w.onpointerdown = () => front(w);
   const h = w.querySelector("header");
   let ox, oy, d = 0;
