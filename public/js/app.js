@@ -32,6 +32,30 @@ function showLoader(ms = 900) {
 
 function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 
+function showModal(title, fields, onSubmit) {
+  const overlay = document.createElement("div");
+  overlay.style.cssText = "position:fixed;inset:0;background:#000a;display:grid;place-items:center;z-index:999999";
+  const box = document.createElement("div");
+  box.style.cssText = "background:var(--panel);border:1px solid var(--or);border-radius:12px;padding:16px;width:min(420px,92%);display:flex;flex-direction:column;gap:8px;box-shadow:0 20px 60px #000";
+  box.innerHTML = `<b style="font-size:16px">${esc(title)}</b>` +
+    fields.map(f => `<label style="font-size:12px;color:var(--mut)">${esc(f.label)}</label>` +
+      (f.type === "textarea"
+        ? `<textarea id="mf_${f.name}" rows="${f.rows||4}" style="padding:8px;background:#000;border:1px solid var(--line);border-radius:6px;color:var(--tx);font:inherit;resize:vertical"></textarea>`
+        : `<input type="${f.type||"text"}" id="mf_${f.name}" value="${esc(f.value||"")}" style="padding:8px;background:#000;border:1px solid var(--line);border-radius:6px;color:var(--tx);font:inherit">`)).join("") +
+    `<div style="display:flex;gap:6px;justify-content:flex-end;margin-top:8px">
+      <button class="pill" id="mcancel">Cancelar</button>
+      <button class="pill" id="mok">OK</button>
+    </div>`;
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  const vals = () => { const v = {}; fields.forEach(f => { v[f.name] = box.querySelector("#mf_" + f.name).value; }); return v; };
+  const close = () => overlay.remove();
+  box.querySelector("#mcancel").onclick = close;
+  box.querySelector("#mok").onclick = () => { const v = vals(); close(); onSubmit(v); };
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+  const first = box.querySelector("input,textarea"); if (first) first.focus();
+}
+
 // ---------- Auth ----------
 let registerMode = false;
 $("#tp").onclick = () => sw(0);
@@ -279,22 +303,24 @@ registerApp("user", {
       const av = document.querySelector(".prof .av");
       av.innerHTML = `<img src="/api/users/skin/${encodeURIComponent(me.nick)}" alt="skin" style="width:64px;height:64px;border-radius:10px">`;
       $("#editbio").onclick = async () => {
-        const bio = prompt("Nova bio:", me.bio || "");
-        if (bio === null) return;
-        await api("/api/users/me", { method: "PUT", body: JSON.stringify({ bio }) });
-        $("#editbio").textContent = "Salvo!";
+        showModal("Editar registro", [{ name: "bio", label: "Bio", type: "textarea", value: me.bio || "" }], async (v) => {
+          await api("/api/users/me", { method: "PUT", body: JSON.stringify({ bio: v.bio }) });
+          $("#editbio").textContent = "Salvo!";
+        });
       };
       const repBtn = document.createElement("button");
       repBtn.className = "go";
       repBtn.style.marginTop = "8px";
       repBtn.textContent = "Denunciar jogador";
       repBtn.onclick = async () => {
-        const nick = prompt("Nick do jogador:");
-        if (!nick) return;
-        const reason = prompt("Motivo:");
-        if (reason === null) return;
-        try { await api("/api/reports", { method: "POST", body: JSON.stringify({ reportedNick: nick, reason }) }); alert("Denúncia enviada"); }
-        catch (e) { alert(e.message); }
+        showModal("Denunciar", [
+          { name: "nick", label: "Nick do jogador" },
+          { name: "reason", label: "Motivo", type: "textarea" },
+        ], async (v) => {
+          if (!v.nick) return;
+          try { await api("/api/reports", { method: "POST", body: JSON.stringify({ reportedNick: v.nick, reason: v.reason }) }); alert("Denúncia enviada"); }
+          catch (e) { alert(e.message); }
+        });
       };
       document.querySelector(".prof").appendChild(repBtn);
     } catch {}
@@ -424,15 +450,15 @@ registerApp("staff", { s: 1,
         content.querySelectorAll("button").forEach(b => b.onclick = async () => {
           const id = b.dataset.id;
           if (b.dataset.a === "warn") {
-            const reason = prompt("Motivo do aviso:");
-            if (reason === null) return;
-            await api("/api/staff/players/" + id + "/warn", { method: "POST", body: JSON.stringify({ reason }) });
-            alert("Aviso registrado");
+            showModal("Advertir", [{ name: "reason", label: "Motivo", type: "textarea" }], async (v) => {
+              await api("/api/staff/players/" + id + "/warn", { method: "POST", body: JSON.stringify({ reason: v.reason }) });
+              alert("Aviso registrado");
+            });
           } else if (b.dataset.a === "ban") {
-            const reason = prompt("Motivo do ban:");
-            if (reason === null) return;
-            await api("/api/staff/players/" + id + "/ban", { method: "POST", body: JSON.stringify({ reason }) });
-            showTab("players");
+            showModal("Banir", [{ name: "reason", label: "Motivo", type: "textarea" }], async (v) => {
+              await api("/api/staff/players/" + id + "/ban", { method: "POST", body: JSON.stringify({ reason: v.reason }) });
+              showTab("players");
+            });
           } else if (b.dataset.a === "unban") {
             await api("/api/staff/players/" + id + "/unban", { method: "POST" });
             showTab("players");
@@ -464,12 +490,14 @@ registerApp("staff", { s: 1,
           showTab("rules");
         });
         $("#newrule").onclick = async () => {
-          const title = prompt("Título:");
-          if (!title) return;
-          const body = prompt("Texto:");
-          if (body === null) return;
-          await api("/api/staff/rules", { method: "POST", body: JSON.stringify({ title, body, order: 0 }) });
-          showTab("rules");
+          showModal("Nova regra", [
+            { name: "title", label: "Título" },
+            { name: "body", label: "Texto", type: "textarea" },
+            { name: "order", label: "Ordem", value: "0" },
+          ], async (v) => {
+            await api("/api/staff/rules", { method: "POST", body: JSON.stringify({ title: v.title, body: v.body, order: parseInt(v.order||0,10) }) });
+            showTab("rules");
+          });
         };
       } else if (tab === "quiz") {
         const qs = await api("/api/staff/quiz");
@@ -479,14 +507,14 @@ registerApp("staff", { s: 1,
           showTab("quiz");
         });
         $("#newquiz").onclick = async () => {
-          const question = prompt("Pergunta:");
-          if (!question) return;
-          const opts = prompt("Opções separadas por vírgula:");
-          if (opts === null) return;
-          const answer = prompt("Índice da resposta correta (0-based):");
-          if (answer === null) return;
-          await api("/api/staff/quiz", { method: "POST", body: JSON.stringify({ question, options: opts.split(",").map(s => s.trim()), answer: parseInt(answer, 10) }) });
-          showTab("quiz");
+          showModal("Nova pergunta", [
+            { name: "question", label: "Pergunta" },
+            { name: "options", label: "Opções (separadas por vírgula)" },
+            { name: "answer", label: "Índice da resposta correta (0-based)", value: "0" },
+          ], async (v) => {
+            await api("/api/staff/quiz", { method: "POST", body: JSON.stringify({ question: v.question, options: v.options.split(",").map(s => s.trim()), answer: parseInt(v.answer, 10) }) });
+            showTab("quiz");
+          });
         };
       } else if (tab === "ann") {
         const items = await api("/api/staff/announcements");
@@ -496,12 +524,13 @@ registerApp("staff", { s: 1,
           showTab("ann");
         });
         $("#newann").onclick = async () => {
-          const title = prompt("Título:");
-          if (!title) return;
-          const body = prompt("Texto:");
-          if (body === null) return;
-          await api("/api/staff/announcements", { method: "POST", body: JSON.stringify({ title, body }) });
-          showTab("ann");
+          showModal("Novo anúncio", [
+            { name: "title", label: "Título" },
+            { name: "body", label: "Texto", type: "textarea" },
+          ], async (v) => {
+            await api("/api/staff/announcements", { method: "POST", body: JSON.stringify({ title: v.title, body: v.body }) });
+            showTab("ann");
+          });
         };
       } else if (tab === "logs") {
         const logs = await api("/api/staff/audit-logs");
@@ -562,11 +591,12 @@ registerApp("notepad", {
     $("#npload").onclick = async () => {
       const files = await api("/api/files").catch(()=>[]);
       if (!files.length) { alert("Nenhum arquivo"); return; }
-      const name = prompt("Nome do arquivo para carregar:");
-      const f = files.find(x => x.filename === name);
-      if (!f) { alert("Não encontrado"); return; }
-      const r = await fetch(f.path, { credentials: "include" });
-      ta.value = await r.text();
+      showModal("Carregar arquivo", [{ name: "name", label: "Nome do arquivo", value: files[0].filename }], async (v) => {
+        const f = files.find(x => x.filename === v.name);
+        if (!f) { alert("Não encontrado"); return; }
+        const r = await fetch(f.path, { credentials: "include" });
+        ta.value = await r.text();
+      });
     };
   },
 });
